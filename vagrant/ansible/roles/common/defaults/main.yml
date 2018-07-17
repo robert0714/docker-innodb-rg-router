@@ -1,0 +1,16 @@
+hosts: [
+  { host_ip: "10.100.198.200", host_name: "cd"},
+  { host_ip: "10.100.197.201", host_name: "mysql-1"},
+  { host_ip: "10.100.197.202", host_name: "mysql-2"}
+  ]
+
+obsolete_services:
+  - puppet
+  - chef-client
+
+centos_files: [
+       { src: "CentOS-Base.repo", dest: "/etc/yum.repos.d/CentOS-Base.repo" },
+       { src: "epel.repo", dest: "/etc/yum.repos.d/epel.repo" },
+       { src: "RPM-GPG-KEY-EPEL-7", dest: "/etc/pki/rpm-gpg/RPM-GPG-KEY-EPEL-7" }
+  ]
+

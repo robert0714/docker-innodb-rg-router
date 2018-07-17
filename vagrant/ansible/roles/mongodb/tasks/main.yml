@@ -1,0 +1,11 @@
+- name: MongoDB is running
+  docker:
+    restart_policy: always
+    name: mongodb
+    image: mongo:3.6.0
+    ports: 
+    - "27017:27017"
+    privileged: yes
+    volumes:
+       - /data/mongodb:/data/db
+    tags: [mongodb]

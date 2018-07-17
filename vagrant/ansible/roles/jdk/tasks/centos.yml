@@ -1,0 +1,22 @@
+  - name: copy jdk.rpm
+    copy:
+      src: jdk-8u151-linux-x64.rpm 
+      dest: /tmp/jdk-8u151-linux-x64.rpm
+
+  - name: install
+    shell: rpm -ivh /tmp/jdk-8u151-linux-x64.rpm
+    ignore_errors: yes
+
+  - name: mkdir /data/slave
+    file:
+      path: /data/jenkins_slave
+      owner: iisi.cm01
+      group: iisi.cm01
+      state: directory
+      mode: 0755
+
+  - name: recursive change onwer
+    shell: chown -R iisi.cm01:iisi.cm01 /data
+
+  - name: recursive change mode
+    shell: chmod -R 0755 /data

@@ -1,0 +1,9 @@
+[all]
+10.100.198.200
+10.100.197.20[1:2] 
+
+
+[mysql]
+10.100.197.201  master=true repl_server_id=10 
+10.100.197.202  repl_server_id=20 
+

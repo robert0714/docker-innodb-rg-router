@@ -1,0 +1,129 @@
+- name: mkdir /data/slave
+  file:
+    path: /mnt/sdb/docker_persistent
+    owner: iisi.cm01
+    group: iisi.cm01
+    state: directory
+    mode: 0755
+
+- name: soft link 
+  shell: ln -s /mnt/sdb/docker_persistent    /var/lib/docker
+  ignore_errors: yes
+  tags: [docker]
+
+
+- name: recursive change mode
+  shell: chmod -R 0755 /data
+  ignore_errors: yes
+  tags: [docker]
+
+
+- name: CentOS dirctory are copied
+  file: path=/etc/docker state=directory mode=0755
+  ignore_errors: yes
+  tags: [docker]
+
+
+#- name: Uninstall old version
+#  yum: name={{ item }} state=absent
+#  with_items:
+#    - docker
+#    - docker-selinux
+#    - docker-engine
+#  tags: [docker]
+
+- name: CentOS files are copied
+  copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  with_items: "{{ centos_files }}"
+  tags: [docker]
+
+- name: Install Docker required packages
+  yum: name={{ item }} state=present
+  with_items:
+    - policycoreutils-python
+    - yum-utils
+    - device-mapper-persistent-data
+    - lvm2
+  tags: [docker]  
+
+- name: copy container-selinux-2.33-1.git86f33cd.el7.noarch.rpm
+  copy:
+    src: container-selinux-2.33-1.git86f33cd.el7.noarch.rpm
+    dest: /tmp/container-selinux-2.33-1.git86f33cd.el7.noarch.rpm
+
+- name: install
+  shell: rpm -ivh /tmp/container-selinux-2.33-1.git86f33cd.el7.noarch.rpm
+  ignore_errors: yes
+
+
+- name: add docker ce repo
+  shell: yum-config-manager --add-repo https://download.docker.com/linux/centos/docker-ce.repo
+  args:
+    creates: /etc/yum.repos.d/docker-ce.repo
+  register: docker_yum_repo
+  tags: [docker]  
+  
+- name: make yum cache fast
+  shell: yum makecache fast
+  when: docker_yum_repo.changed
+  tags: [docker] 
+
+- name: get docker stable version number
+  shell: yum list docker-ce.x86_64  --showduplicates | sort -r |grep  docker-ce-stable  |awk '{print $2}' | awk 'BEGIN{getline;print}'
+  register: docker_stable_version  
+  tags: [docker] 
+
+- name: CentOS docker package is installed
+  yum:
+    name: "docker-ce-{{ docker_stable_version.stdout }}"
+    state: present
+  notify: restart docker
+  tags: [docker]
+
+
+- name: CentOS files are present
+  template:
+    src: "{{ centos_docker_cfg }}"
+    dest: "{{ centos_docker_cfg_dest }}"
+  register: copy_result
+  tags: [docker]
+
+- name: Centos Daemon is reloaded
+  command: systemctl daemon-reload
+  when: is_systemd is defined
+  tags: [docker]
+
+- name: vagrant user is added to the docker group
+  user:
+    name: "{{ item }}"
+    groups: docker
+    append: yes
+  with_items: 
+    - iisi.cm01
+    - iisi.prod94
+    - iisi.prod04
+  register: user_result
+  tags: [docker]
+
+- name: Centos Docker service is restarted
+  service:
+    name: docker
+    state: restarted
+  when: copy_result|changed or user_result|changed
+  tags: [docker]
+
+- name: DockerUI is running
+  docker_container:
+    restart_policy: always
+    image: uifd/ui-for-docker
+    name: dockerui
+    ports: 9000:9000
+    privileged: yes
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+  when: not skip_ui is defined
+  ignore_errors: yes
+  tags: [docker]
+ 

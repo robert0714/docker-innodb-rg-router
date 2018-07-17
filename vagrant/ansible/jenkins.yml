@@ -1,0 +1,6 @@
+- hosts: jenkins 
+  remote_user: iisi.prod94
+  serial: 1
+  roles:
+    - jenkins2-docker 
+

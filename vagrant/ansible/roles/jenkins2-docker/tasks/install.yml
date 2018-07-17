@@ -1,0 +1,69 @@
+
+- name: Directories are created
+  file:
+    path: "{{ item.dir }}"
+    mode: 0777
+    recurse: yes
+    state: directory
+  with_items: "{{ configs }}"
+  tags: [jenkins]
+
+
+- name: Create custom init scripts directory.
+  file:
+    path: "/data/jenkins/init.groovy.d"
+    state: directory
+    mode: 0775
+  tags:  [jenkins]
+
+- name: configure default users
+  template:
+    src: basic-security.groovy
+    dest: "/data/jenkins/init.groovy.d/basic-security.groovy"
+  register: jenkins_users_config
+  tags:  [jenkins]
+   
+- name: Container is running
+  docker_container:   
+    privileged: yes
+    env:
+      JAVA_OPTS: "-Djenkins.install.runSetupWizard=false    -Duser.timezone=Asia/Taipei"
+      JENKINS_OPTS: "--prefix=/maas_jenkins" 
+    name: jenkins
+    image: "jenkins/jenkins:{{ jenkins_version }}"
+    ports: 
+        - "8301:8080"
+        - "8302:5000"
+        - "50000:50000"
+    volumes:
+      -  /mnt/sdb/docker_jenkins_data/master:/var/jenkins_home
+#      - /vagrant/.vagrant/machines:/machines
+  register: container_result
+  tags: [jenkins]
+
+- pause: seconds=45
+  when: container_result|changed
+  tags: [jenkins]
+
+#- name: wildfly-cli-8.2.1.Final-client is present for wildfly-deploy plugins
+#  get_url:
+#    url: https://search.maven.org/remotecontent?filepath=org/wildfly/wildfly-cli/8.2.1.Final/wildfly-cli-8.2.1.Final-client.jar
+#    dest: /data/jenkins/war/WEB-INF/lib/wildfly-cli-8.2.1.Final-client.jar
+#  tags: [jenkins]
+
+# - name: Plugins are present
+#   copy:
+#     src='plugins/{{ item }}'
+#     dest='/data/jenkins/plugins/{{ item }}'
+#     mode=0777
+#   with_items: "{{ plugins_files }}"
+#   tags: [jenkins]
+
+- name: Configurations are present
+  copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dir }}/{{ item.file }}"
+    mode: "{{ item.mode }}"
+  with_items: "{{ configs }}"
+  register: configs_result
+  tags: [jenkins]

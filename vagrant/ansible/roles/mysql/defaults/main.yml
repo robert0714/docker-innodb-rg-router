@@ -1,0 +1,11 @@
+mysql_root_pass: MyNewPass4!
+mysql_rep_user: rpl_user
+mysql_rep_pass: MyNewPass4!
+mysql_rep_priv: '*.*:REPLICATION SLAVE,REPLICATION CLIENT' 
+usePercona: 0
+proxysql_user: sbuser
+proxysql_user_passwd: MyNewPass4!
+
+centos_files: [
+       { src: "mysql-community.repo", dest: "/etc/yum.repos.d/mysql-community.repo" }
+  ]
