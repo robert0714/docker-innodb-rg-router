@@ -28,9 +28,9 @@
     - vim
     - telnet
     - lsof
-    - python-pip
-    - python-virtualenv
-    - MySQL-python
+    # - python-pip
+    # - python-virtualenv
+    # - MySQL-python
   tags: [mysql]
 
 - name: Install Mysql RPM dependencies
