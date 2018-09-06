@@ -14,6 +14,45 @@
     dest: "{{ item.dest }}"
   with_items: "{{ centos_files }}"
   tags: [mysql]
+  
+- name: selenix  policycoreutils
+  yum: 
+    name: policycoreutils-python 
+    state: present
+  ignore_errors: yes
+  tags: [common]
+
+- name: selenix policies 1
+  shell: semanage port -a -t mysqld_port_t -p tcp {{ item }}
+  with_items:
+    - 24901
+    - 24902
+    - 24903
+    - 24904    
+    - 3306
+    - 33060
+    - 33061
+  ignore_errors: yes
+  tags: [common]
+
+- name: selenix policies 2
+  shell: setsebool -P httpd_can_network_connect true
+  ignore_errors: yes
+  tags: [common]
+
+
+- name: firewalld  policies
+  shell:  firewall-cmd --zone=public --add-port={{ item }}/tcp --permanent
+  with_items:
+    - 24901
+    - 24902
+    - 24903
+    - 24904
+    - 3306
+    - 33060
+    - 33061
+  ignore_errors: yes
+  tags: [common]
 
 
 #- name: update repositoey info
