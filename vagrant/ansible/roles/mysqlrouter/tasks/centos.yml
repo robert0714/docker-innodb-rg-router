@@ -1,0 +1,130 @@
+# - name: Add Mysql repository
+#   yum: name=http://dev.mysql.com/get/mysql57-community-release-el7-11.noarch.rpm
+#   when: usePercona == 0
+#   tags: [mysql]
+
+# - name: Add Percona Server Mysql repository
+#   yum: name=http://www.percona.com/downloads/percona-release/redhat/0.1-4/percona-release-0.1-4.noarch.rpm
+#   when: usePercona == 1 
+#   tags: [mysql]
+
+- name: CentOS files are copied
+  copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  with_items: "{{ centos_files }}"
+  tags: [mysql]
+  
+- name: selenix  policycoreutils
+  yum: 
+    name: policycoreutils-python 
+    state: present
+  ignore_errors: yes
+  tags: [common]
+
+- name: selenix policies 1
+  shell: semanage port -a -t mysqld_port_t -p tcp {{ item }}
+  with_items:
+    - 24901
+    - 24902
+    - 24903
+    - 24904    
+    - 3306
+    - 33060
+    - 33061
+    - 3307
+    - 33070
+    - 6446
+    - 64460
+    - 6447
+    - 64470
+  ignore_errors: yes
+  tags: [common]
+
+- name: selenix policies 2
+  shell: setsebool -P httpd_can_network_connect true
+  ignore_errors: yes
+  tags: [common]
+
+
+- name: firewalld  policies
+  shell:  firewall-cmd --zone=public --add-port={{ item }}/tcp --permanent
+  with_items:
+    - 24901
+    - 24902
+    - 24903
+    - 24904
+    - 3306
+    - 33060
+    - 33061
+    - 3307
+    - 33070
+    - 6446
+    - 64460
+    - 6447
+    - 64470
+  ignore_errors: yes
+  tags: [common]
+
+
+#- name: update repositoey info
+#  shell: yum update -y
+#  tags: [mysql]
+
+- name: Install Mysql common RPM dependencies
+  become: true
+  yum: name={{ item }} state=present
+  with_items:
+    - net-tools
+    - vim
+    - telnet
+    - lsof 
+    - MySQL-python
+  tags: [mysql]
+
+- name: Install Mysql common RPM dependencies
+  become: true
+  yum: name={{ item }} state=absent
+  with_items: 
+    - postfix
+  tags: [mysql]
+
+- name: Add mysql-shell-8.0.11-1.el7
+  yum: name=http://ftp.ntu.edu.tw/MySQL/Downloads/MySQL-Shell/mysql-shell-8.0.11-1.el7.x86_64.rpm
+  when: usePercona == 0
+  tags: [mysql]
+
+- name: Add mysql-community-common-8.0.11-1.el7
+  yum: name=http://ftp.ntu.edu.tw/MySQL/Downloads/MySQL-8.0/mysql-community-common-8.0.11-1.el7.x86_64.rpm
+  when: usePercona == 0
+  tags: [mysql]
+
+- name: Add mysql-community-libs-8.0.11-1.el7
+  yum: name=http://ftp.ntu.edu.tw/MySQL/Downloads/MySQL-8.0/mysql-community-libs-8.0.11-1.el7.x86_64.rpm
+  when: usePercona == 0
+  tags: [mysql]
+
+- name: Add mysql-community-libs-compat-8.0.11-1.el7
+  yum: name=http://ftp.ntu.edu.tw/MySQL/Downloads/MySQL-8.0/mysql-community-libs-compat-8.0.11-1.el7.x86_64.rpm
+  when: usePercona == 0
+  tags: [mysql]
+
+- name: Add mysql-community-client-8.0.11-1.el7
+  yum: name=http://ftp.ntu.edu.tw/MySQL/Downloads/MySQL-8.0/mysql-community-client-8.0.11-1.el7.x86_64.rpm
+  when: usePercona == 0
+  tags: [mysql] 
+
+- name: Add mysql-router-8.0.11-1.el7
+  yum: name=http://ftp.ntu.edu.tw/MySQL/Downloads/MySQL-Router/mysql-router-8.0.11-1.el7.x86_64.rpm
+  when: usePercona == 0
+  tags: [mysql] 
+ 
+- name: Install Percona Mysql RPM dependencies
+  become: true
+  yum: name={{ item }} state=present
+  with_items: 
+    - Percona-Server-client-57 
+  when: usePercona == 1   
+  tags: [mysql]
+
+ 

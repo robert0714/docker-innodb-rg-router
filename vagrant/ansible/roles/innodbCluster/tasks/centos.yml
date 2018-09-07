@@ -1,0 +1,381 @@
+# - name: Add Mysql repository
+#   yum: name=http://dev.mysql.com/get/mysql57-community-release-el7-11.noarch.rpm
+#   when: usePercona == 0
+#   tags: [mysql]
+
+# - name: Add Percona Server Mysql repository
+#   yum: name=http://www.percona.com/downloads/percona-release/redhat/0.1-4/percona-release-0.1-4.noarch.rpm
+#   when: usePercona == 1 
+#   tags: [mysql]
+
+- name: CentOS files are copied
+  copy:
+    src: "{{ item.src }}"
+    dest: "{{ item.dest }}"
+  with_items: "{{ centos_files }}"
+  tags: [mysql]
+  
+- name: selenix  policycoreutils
+  yum: 
+    name: policycoreutils-python 
+    state: present
+  ignore_errors: yes
+  tags: [common]
+
+- name: selenix policies 1
+  shell: semanage port -a -t mysqld_port_t -p tcp {{ item }}
+  with_items:
+    - 24901
+    - 24902
+    - 24903
+    - 24904    
+    - 3306
+    - 33060
+    - 33061
+    - 3307
+    - 33070
+    - 6446
+    - 64460
+    - 6447
+    - 64470
+  ignore_errors: yes
+  tags: [common]
+
+- name: selenix policies 2
+  shell: setsebool -P httpd_can_network_connect true
+  ignore_errors: yes
+  tags: [common]
+
+
+- name: firewalld  policies
+  shell:  firewall-cmd --zone=public --add-port={{ item }}/tcp --permanent
+  with_items:
+    - 24901
+    - 24902
+    - 24903
+    - 24904
+    - 3306
+    - 33060
+    - 33061
+    - 3307
+    - 33070
+    - 6446
+    - 64460
+    - 6447
+    - 64470
+  ignore_errors: yes
+  tags: [common]
+
+
+#- name: update repositoey info
+#  shell: yum update -y
+#  tags: [mysql]
+
+- name: Install Mysql common RPM dependencies
+  become: true
+  yum: name={{ item }} state=present
+  with_items:
+    - net-tools
+    - vim
+    - telnet
+    - lsof 
+    - MySQL-python
+  tags: [mysql]
+
+- name: Install Mysql common RPM dependencies
+  become: true
+  yum: name={{ item }} state=absent
+  with_items: 
+    - postfix
+  tags: [mysql]
+
+- name: Add mysql-shell-8.0.11-1.el7
+  yum: name=http://ftp.ntu.edu.tw/MySQL/Downloads/MySQL-Shell/mysql-shell-8.0.11-1.el7.x86_64.rpm
+  when: usePercona == 0
+  tags: [mysql]
+
+- name: Add mysql-community-common-8.0.11-1.el7
+  yum: name=http://ftp.ntu.edu.tw/MySQL/Downloads/MySQL-8.0/mysql-community-common-8.0.11-1.el7.x86_64.rpm
+  when: usePercona == 0
+  tags: [mysql]
+
+- name: Add mysql-community-libs-8.0.11-1.el7
+  yum: name=http://ftp.ntu.edu.tw/MySQL/Downloads/MySQL-8.0/mysql-community-libs-8.0.11-1.el7.x86_64.rpm
+  when: usePercona == 0
+  tags: [mysql]
+
+- name: Add mysql-community-libs-compat-8.0.11-1.el7
+  yum: name=http://ftp.ntu.edu.tw/MySQL/Downloads/MySQL-8.0/mysql-community-libs-compat-8.0.11-1.el7.x86_64.rpm
+  when: usePercona == 0
+  tags: [mysql]
+
+- name: Add mysql-community-client-8.0.11-1.el7
+  yum: name=http://ftp.ntu.edu.tw/MySQL/Downloads/MySQL-8.0/mysql-community-client-8.0.11-1.el7.x86_64.rpm
+  when: usePercona == 0
+  tags: [mysql]
+
+- name: Add mysql-community-server-8.0.11-1.el7
+  yum: name=http://ftp.ntu.edu.tw/MySQL/Downloads/MySQL-8.0/mysql-community-server-8.0.11-1.el7.x86_64.rpm
+  when: usePercona == 0
+  tags: [mysql]
+
+# - name: Install Mysql RPM dependencies
+#   become: true
+#   yum: name={{ item }} state=present
+#   with_items: 
+#     - mysql-community-common
+#     - mysql-community-libs
+#     - mysql-community-client
+#     - mysql-community-server 
+#   when: usePercona == 0 
+#   tags: [mysql]
+
+
+- name: Install Percona Mysql RPM dependencies
+  become: true
+  yum: name={{ item }} state=present
+  with_items:
+    - Percona-Server-server-57
+    - Percona-Server-client-57
+    - Percona-Server-shared-57
+    - Percona-Server-devel-57 
+  when: usePercona == 1   
+  tags: [mysql]
+
+
+# - name: mkdir  /mnt/sdb/mysql_data
+#   file:
+#     path: /mnt/sdb/mysql_data
+#     owner: mysql
+#     group: mysql
+#     state: directory
+#     mode: 0777
+
+# - name: ln
+#   shell: ln -s   /mnt/sdb/mysql_data /var/lib/mysql
+#   ignore_errors: yes
+
+# - name: chown  /mnt/sdb/mysql_data
+#   shell: chown -R mysql:mysql   /var/lib/mysql
+    
+
+# - name: chown  /mnt/sdb/mysql_data
+#   shell: chmod  -R  777  /var/lib/mysql
+
+# - name: chown  /mnt/sdb/mysql_data
+#   shell: chmod  -R  777 /mnt/sdb/mysql_data
+
+- name: Configure my.cnf file 
+  template: 
+    src: my.cnf.00.j2 
+    dest: /etc/my.cnf
+    owner: root 
+    group: root 
+    mode: 0644 
+  tags: [mysql]
+
+
+- name: mysql service is started 
+  service:
+    name: mysqld
+    state: started
+  tags: [mysql]
+ 
+
+- name: Get percona server password
+  shell: cat /var/log/mysqld.log | grep "temporary password" | awk '{print $13}'
+  register: mysql_temp_pass
+  tags: [mysql]
+
+
+- name: Copy .my.cnf file
+  template: 
+    src: temp_my.cnf.j2 
+    dest: /root/.my.cnf
+    owner: root 
+    group: root 
+    mode: 0644
+  tags: [mysql]
+
+- name: whoami 
+  become: false
+  shell: whoami
+  register: linux_user
+  tags: [mysql]
+
+- name: id -g -n
+  become: false
+  shell: id -g -n
+  register: linux_group
+  tags: [mysql]
+
+- name: low password policy
+  shell: mysql  -e " SET GLOBAL validate_password.policy=LOW ;SET GLOBAL validate_password.special_char_count=0 ;SET GLOBAL validate_password.number_count=0 ;SET GLOBAL validate_password.mixed_case_count=0 ; SET GLOBAL validate_password.length=6 " --connect-expired-password -uroot -p"{{ mysql_temp_pass.stdout }}" ;
+  ignore_errors: True
+  when: master is defined
+  tags: [mysql]
+
+# https://www.rennetti.com/howto/139/mysql-5-7-on-ansible  
+- name: Set new password from temporary password
+  shell: 'mysql -e "SET PASSWORD = ''{{ mysql_root_pass }}'' " --connect-expired-password -uroot -p"{{ mysql_temp_pass.stdout }}"'
+  ignore_errors: True
+  tags: [mysql]
+
+- name: "MySQL: template: .my.cnf file to /home/{{ linux_user.stdout }}"
+  become: false
+  template:
+    src: temp_my.cnf.j2
+    dest: "~/.my.cnf"
+    owner: "{{ linux_user.stdout }}"
+    group: "{{ linux_group.stdout }}"
+    mode: 0600
+  tags: [mysql]
+
+
+- name: Set root password
+  become: false
+  mysql_user: 
+      name: root
+      password: "{{ mysql_root_pass }}"
+      priv: '*.*:ALL,GRANT'      
+      state: present
+      host: "{{ item }}"
+      sql_log_bin: no
+  with_items:
+     - "{{ ansible_hostname }}"
+     - 127.0.0.1
+     - ::1
+     - '%'
+  ignore_errors: True
+  tags: [mysql]
+
+- name: register hostname
+  shell: hostname
+  register: hostname
+  tags: [mysql]  
+  
+
+- name: removing hostname mapping 127.0.0.1
+  lineinfile:
+    dest: /etc/hosts
+    regexp: "^127.0.0.1.*{{ item.host_name }}.*"
+    state: absent
+  with_items: "{{ hosts }}"
+  tags: [commenting]
+
+- name: Configuring InnoDB Cluster
+  shell:  mysqlsh --file /tmp/configureInstance.js  
+  tags: [mysql]  
+  
+
+  
+- name: hostname.stdout.find('mysql-1') 
+  debug:
+    msg: "  {{ hostname.stdout.find('mysql-1')  }} " 
+  tags: [mysql]  
+  
+- name: hostname.stdout.find('mysql-3') 
+  debug:
+    msg: "  {{ hostname.stdout.find('mysql-3')  }} "   
+  tags: [mysql]
+  
+  
+
+# - name:  Create replication user
+#   mysql_user: 
+#      name: "{{ mysql_rep_user }}"
+#      password: "{{ mysql_rep_pass }}"
+#      priv: "{{ mysql_rep_priv }}"
+#      host: '%'
+#      state: present
+#   when: master is defined
+#   tags: [mysql]
+
+
+
+
+
+# - name: replication group - Flush
+#   shell: mysql --defaults-file=/root/.my.cnf -e "FLUSH PRIVILEGES";  mysql --defaults-file=/root/.my.cnf -e "FLUSH TABLES WITH READ LOCK";
+#   when: master is defined
+#   tags: [mysql]
+
+# - name: Replication-group -  performance_schema.replication_group_members status ?
+#   shell: mysql -uroot   -Bse "SELECT * FROM performance_schema.replication_group_members\G;" | grep MEMBER_STATE | awk '{print $2}'
+#   register: rg_status
+#   tags: [mysql]
+
+# - name: Replication-group -  PLUGIN group_replication exist ?
+#   shell: mysql -uroot   -Bse "SHOW PLUGINS;" | grep group_replication | awk '{print $2}'
+#   register: plugin_status
+#   tags: [mysql]
+
+# - name: display rg_status[1]
+#   debug:
+#     msg: "  {{ rg_status }} "  
+#   tags: [mysql]
+
+# - name: display rg_status[2]
+#   debug:
+#     msg: "  {{ rg_status.stdout.find('ONLINE') }} "  
+#   tags: [mysql]
+
+
+# - name: mysql service is restarted in order to install group_replication plugin
+#   service:
+#     name: mysqld
+#     state: restarted
+#   when:   rg_status.stdout.find('ONLINE')  == -1
+#   tags: [mysql]
+  
+# - name: Replication-group - INSTALL PLUGIN group_replication
+#   shell: mysql -uroot   -Bse "INSTALL PLUGIN group_replication SONAME \"group_replication.so\" ;"
+#   when : plugin_status.stdout.find('ACTIVE')  == -1  
+#   tags: [mysql]
+
+
+# - name: Replication-group - Configure the recovery credentials
+#   shell: mysql -uroot  -Bse  "CHANGE MASTER TO MASTER_USER=\"{{ mysql_rep_user }}\", MASTER_PASSWORD=\"{{ mysql_rep_pass }}\"  FOR CHANNEL \"group_replication_recovery\";"
+#   tags: [mysql]
+
+# - name: display host_var
+#   debug:
+#     msg: "  {{ hostvars[groups['mysql'][0]]['repl_local_address'] }}   "  
+#   tags: [mysql]
+
+
+# - name: Replication-group -  Master start in  group_replication  
+#   shell: mysql -uroot   -Bse "SET GLOBAL group_replication_bootstrap_group=ON; START GROUP_REPLICATION; SET GLOBAL group_replication_bootstrap_group=OFF; " 
+#   register: master_node_
+#   when: " master is   defined    and   rg_status.stdout.find('ONLINE')  == -1 "
+#   tags: [mysql]
+
+
+
+# - name: Replication-group -  Slave start in  group_replication  
+#   shell: mysql -uroot   -Bse "RESET MASTER; START GROUP_REPLICATION;  " 
+#   register: master_node_
+#   when: "  master is not  defined and   rg_status.stdout.find('ONLINE')  == -1    "
+#   tags: [mysql]
+
+
+
+ 
+# - name:  To provide read/write access to the cluster for ProxySQL, add this user on one of the Percona XtraDB Cluster nodes
+#   become: false
+#   mysql_user: 
+#       name: "{{ proxysql_user }}"
+#       password: "{{ proxysql_user_passwd }}"
+#       priv: '*.*:ALL,GRANT' 
+#       host: "{{ item }}"
+#       state: present 
+#   with_items:
+#      - "{{ ansible_hostname }}"
+#      - 127.0.0.1
+#      - ::1
+#      - localhost
+#      - '%'
+#   ignore_errors: yes
+#   tags: [mysql]
+ 
+
