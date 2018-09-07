@@ -209,6 +209,12 @@
   register: linux_group
   tags: [mysql]
 
+- name: low password policy
+  shell: mysql  -e " SET GLOBAL validate_password.policy=LOW ;SET GLOBAL validate_password.special_char_count=0 ;SET GLOBAL validate_password.number_count=0 ;SET GLOBAL validate_password.mixed_case_count=0 ; SET GLOBAL validate_password.length=6 " --connect-expired-password -uroot -p"{{ mysql_temp_pass.stdout }}" ;
+  ignore_errors: True
+  when: master is defined
+  tags: [mysql]
+
 # https://www.rennetti.com/howto/139/mysql-5-7-on-ansible  
 - name: Set new password from temporary password
   shell: 'mysql -e "SET PASSWORD = ''{{ mysql_root_pass }}'' " --connect-expired-password -uroot -p"{{ mysql_temp_pass.stdout }}"'
@@ -240,6 +246,7 @@
      - 127.0.0.1
      - ::1
      - '%'
+  ignore_errors: True
   tags: [mysql]
 
 - name: register hostname
@@ -247,36 +254,45 @@
   register: hostname
   tags: [mysql]  
   
-  
 
-  
-- name: hostname.stdout.find('mysql-01') 
-  debug:
-    msg: "  {{ hostname.stdout.find('mysql-01')  }} " 
+- name: removing hostname mapping 127.0.0.1
+  lineinfile:
+    dest: /etc/hosts
+    regexp: "^127.0.0.1.*{{ item.host_name }}.*"
+    state: absent
+  with_items: "{{ hosts }}"
+  tags: [commenting]
+
+- name: Configuring InnoDB Cluster
+  shell:  mysqlsh --file /tmp/configureInstance.js  
   tags: [mysql]  
   
-- name: hostname.stdout.find('mysql-03') 
+
+  
+- name: hostname.stdout.find('mysql-1') 
   debug:
-    msg: "  {{ hostname.stdout.find('mysql-03')  }} "   
+    msg: "  {{ hostname.stdout.find('mysql-1')  }} " 
+  tags: [mysql]  
+  
+- name: hostname.stdout.find('mysql-3') 
+  debug:
+    msg: "  {{ hostname.stdout.find('mysql-3')  }} "   
   tags: [mysql]
   
   
 
-- name:  Create replication user
-  mysql_user: 
-     name: "{{ mysql_rep_user }}"
-     password: "{{ mysql_rep_pass }}"
-     priv: "{{ mysql_rep_priv }}"
-     host: '%'
-     state: present
-  when: master is defined
-  tags: [mysql]
+# - name:  Create replication user
+#   mysql_user: 
+#      name: "{{ mysql_rep_user }}"
+#      password: "{{ mysql_rep_pass }}"
+#      priv: "{{ mysql_rep_priv }}"
+#      host: '%'
+#      state: present
+#   when: master is defined
+#   tags: [mysql]
 
 
-- name: low password policy
-  shell: mysql  -e " SET GLOBAL validate_password.policy=LOW ;SET GLOBAL validate_password.special_char_count=0 ;SET GLOBAL validate_password.number_count=0 ;SET GLOBAL validate_password.mixed_case_count=0 ; SET GLOBAL validate_password.length=6" ;
-  when: master is defined
-  tags: [mysql]
+
 
 
 # - name: replication group - Flush

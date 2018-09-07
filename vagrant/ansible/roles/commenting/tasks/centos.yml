@@ -1,0 +1,8 @@
+- name: removing hostname mapping 127.0.0.1
+  lineinfile:
+    dest: /etc/hosts
+    regexp: "^127.0.0.1.*{{ item.host_name }}.*"
+    state: absent
+  with_items: "{{ hosts }}"
+  tags: [commenting]
+ 

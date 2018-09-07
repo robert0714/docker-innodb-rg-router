@@ -2,6 +2,7 @@
   remote_user: vagrant
   serial: 1
   roles:
-    - common
-    - mysql
+     - common
+     - mysql
+    #- commenting
 

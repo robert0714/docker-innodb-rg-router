@@ -1,11 +1,13 @@
-mysql_root_pass: MyNewPass4!
+mysql_root_pass: qazwsx
 mysql_rep_user: rpl_user
-mysql_rep_pass: MyNewPass4!
+mysql_rep_pass: qazwsx
 mysql_rep_priv: '*.*:REPLICATION SLAVE,REPLICATION CLIENT' 
 usePercona: 0
 proxysql_user: sbuser
-proxysql_user_passwd: MyNewPass4!
+proxysql_user_passwd: qazwsx
 
 centos_files: [
-       { src: "mysql-community.repo", dest: "/etc/yum.repos.d/mysql-community.repo" }
+       { src: "mysql-community.repo", dest: "/etc/yum.repos.d/mysql-community.repo" },
+       { src: "configureInstance.js", dest: "/tmp/configureInstance.js" }, 
+       { src: "RPM-GPG-KEY-mysql", dest: "/etc/pki/rpm-gpg/RPM-GPG-KEY-mysql" }
   ]
