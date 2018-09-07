@@ -4,4 +4,4 @@
     regexp: "^{{ item.host_ip }}"
     line: "{{ item.host_ip }} {{ item.host_name }}"
   with_items:  "{{ hosts }}"
-  tags: [common]
+  tags: [commenting]

@@ -3,7 +3,9 @@ hosts: [
   { host_ip: "10.100.197.201", host_name: "mysql-1"},
   { host_ip: "10.100.197.202", host_name: "mysql-2"},
   { host_ip: "10.100.197.203", host_name: "mysql-3"},
-  { host_ip: "10.100.197.204", host_name: "mysql-4"}
+  { host_ip: "10.100.197.204", host_name: "mysql-4"},
+  { host_ip: "10.100.197.211", host_name: "mysqlrouter-1"},
+  { host_ip: "10.100.197.212", host_name: "mysqlrouter-2"}
   ]
 
 obsolete_services:

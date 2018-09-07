@@ -1,0 +1,8 @@
+- hosts: mysqlrouter
+  remote_user: vagrant
+  serial: 1
+  roles:
+     - common
+     - mysqlrouter
+    #- commenting
+
