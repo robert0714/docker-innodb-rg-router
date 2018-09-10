@@ -212,7 +212,6 @@
 - name: low password policy
   shell: mysql  -e " SET GLOBAL validate_password.policy=LOW ;SET GLOBAL validate_password.special_char_count=0 ;SET GLOBAL validate_password.number_count=0 ;SET GLOBAL validate_password.mixed_case_count=0 ; SET GLOBAL validate_password.length=6 " --connect-expired-password -uroot -p"{{ mysql_temp_pass.stdout }}" ;
   ignore_errors: True
-  when: master is defined
   tags: [mysql]
 
 # https://www.rennetti.com/howto/139/mysql-5-7-on-ansible  
